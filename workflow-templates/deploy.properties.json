@@ -1,0 +1,5 @@
+{
+    "name": "Deploy Workflow",
+    "description": "Deploy image to kubernetes starter workflow.",
+    "iconName": "example-icon"
+}

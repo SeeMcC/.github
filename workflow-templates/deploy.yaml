@@ -1,0 +1,40 @@
+name: deploy
+
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - 'manifests/**'
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  deploy:
+    needs: build
+    runs-on: [self-hosted]
+    env:
+      DEPLOYMENT_IMAGE: harbor.seemccarthy.com/${{ vars.APP_NAME }}/${{ vars.APP_NAME }}:${{ github.run_number }}
+
+      GITHUB_REPO_URL: git@github.com:Newbsylberry/health-api.git
+
+    steps:
+
+    - name: Update deployment with latest image
+      run: yq e '.spec.template.spec.containers[0].image = "${{ env.DEPLOYMENT_IMAGE}}"' -i ./manifests/deployment.yaml
+
+    - name: Add, commit and push changes
+      run: | 
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add ./manifests/deployment.yaml      
+        git commit -am "Updated deployment with latest image"        
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GH_PAT }}
+
+
+
+
+

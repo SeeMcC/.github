@@ -1,0 +1,48 @@
+name: build
+
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - 'manifests/**'
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: [self-hosted]
+    env:
+      IMAGE: ${{ vars.APP_NAME }}:${{ github.run_number }}
+
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image using Podman
+      run: podman build . --platform linux/amd64 --file Dockerfile --tag ${{env.IMAGE}}
+
+#    - name: Run Trivy vulnerability scanner
+#      uses: aquasecurity/trivy-action@master
+#      with:
+#        image-ref: 'localhost/${{env.IMAGE}}'
+#        format: 'table'
+#        exit-code: '1'
+#        ignore-unfixed: true
+#        vuln-type: 'os,library'
+#        severity: 'CRITICAL,HIGH'
+
+   # # add a step which uses trivy to scan the image for vulnerabilities
+   #  - name: Scan the Docker image for vulnerabilities
+   #    run: trivy image localhost/${{env.IMAGE}} --timeout 30m
+
+   # # add a step which creates an SBOM for the image
+   #  - name: Create an SBOM for the Docker image using trivy
+   #    run: trivy image localhost/${{env.IMAGE}} --format cyclonedx --output ./health-api-sbom-$(date +%s).json --timeout 30m
+
+    # add a step which logs into the Harbor registry
+    - name: Log into the Harbor registry
+      run: podman login harbor.seemccarthy.com -u ${{ secrets.HARBOR_USERNAME }} -p ${{ secrets.HARBOR_PASSWORD }}
+
+    - name: Push image to harbor
+      run: podman push ${{env.IMAGE}} ${{ vars.HARBOR_REGISTRY_URL }}${{env.IMAGE}}
